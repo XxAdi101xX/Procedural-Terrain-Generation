@@ -3,6 +3,7 @@
 
 #include "Terrain.h"
 #include "KismetProceduralMeshLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
 
 // Sets default values
 ATerrain::ATerrain()
@@ -22,6 +23,7 @@ void ATerrain::OnConstruction(const FTransform &Transform)
 	Triangles.Reset();
 	UV_0.Reset();
 
+	CreateNoiseMap();
 	CreateVertices();
 	CreateTriangles();
 
@@ -35,6 +37,7 @@ void ATerrain::OnConstruction(const FTransform &Transform)
 void ATerrain::BeginPlay()
 {
 	Super::BeginPlay();
+	// GEngine->AddOnScreenDebugMessage(-1, 999.0f, FColor::Yellow, FString::Printf(TEXT("Z %f"), 3.0));
 }
 
 // Called every frame
@@ -43,16 +46,75 @@ void ATerrain::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
+void ATerrain::CreateNoiseMap()
+{
+	float MaxNoiseHeight = TNumericLimits<float>::Min();
+	float MinNoiseHeight = TNumericLimits<float>::Max();
+
+	// If we don't init NoiseMap here
+	NoiseMap.Init(TArray<float>(), MapXSize + 1);
+
+	// UE_LOG(LogTemp, Warning, TEXT("The !!!noisemap size is %i"), NoiseMap.Num());
+
+	for (int X = 0; X <= MapXSize; ++X)
+	{
+		for (int Y = 0; Y <= MapYSize; ++Y)
+		{
+			float Amplitude = 1.0f;
+			float Frequency = 1.0f;
+			float NoiseZ = 0.0f;
+
+			for (int i = 0; i < NoiseLayers; ++i)
+			{
+				float SampleX = X * NoiseScale * Frequency;
+				float SampleY = Y * NoiseScale * Frequency;
+
+				float PerlinSample = FMath::PerlinNoise2D(FVector2D(SampleX, SampleY));
+				NoiseZ += PerlinSample * Amplitude;
+
+				Amplitude *= Gain;
+				Frequency *= Lacunarity;
+			}
+
+			if (NoiseZ > MaxNoiseHeight)
+			{
+				MaxNoiseHeight = NoiseZ;
+			}
+			else if (NoiseZ < MinNoiseHeight)
+			{
+				MinNoiseHeight = NoiseZ;
+			}
+			NoiseMap[X].Add(NoiseZ);
+			//UE_LOG(LogTemp, Warning, TEXT("@@@The ZNoise is %f"), NoiseMap[X][Y]);
+		}
+	}
+
+	for (int X = 0; X <= MapXSize; ++X)
+	{
+		for (int Y = 0; Y <= MapYSize; ++Y)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("The !!!noisemap value is %f %i %i"), NoiseMap[X][Y], NoiseMap.Num(), NoiseMap[0].Num());
+			NoiseMap[X][Y] = UKismetMathLibrary::InverseLerp(MinNoiseHeight, MaxNoiseHeight, NoiseMap[X][Y]);
+		}
+	}
+}
+
 void ATerrain::CreateVertices()
 {
 	// For a number of boxes, we need one more vertex hence the <= check
-	for (int X = 0; X <= XSize; ++X)
+	for (int X = 0; X <= MapXSize; ++X)
 	{
-		for (int Y = 0; Y <= YSize; ++Y)
+		for (int Y = 0; Y <= MapYSize; ++Y)
 		{
 			// Perlin noise returns the same value for whole numbers so we add 0.1
-			float Z = FMath::PerlinNoise2D(FVector2D(X * NoiseScale + 0.1f, Y * NoiseScale + 0.1f)) * ZMultiplier;
-			GEngine->AddOnScreenDebugMessage(-1, 999.0f, FColor::Yellow, FString::Printf(TEXT("Z %f"), Z));
+			//float Offset = 0.1f;
+			//float SampleX = X * NoiseScale + Offset;
+			//float SampleY = Y * NoiseScale + Offset;
+			//float Z = FMath::PerlinNoise2D(FVector2D(SampleX, SampleY)) * ZScale;
+			float Z = NoiseMap[X][Y] * ZScale;
+
+			//UE_LOG(LogTemp, Warning, TEXT("The Z is %f"), Z);
+
 			Vertices.Add(FVector(X * Scale, Y * Scale, Z));
 			UV_0.Add(FVector2D(X * UVScale, Y * UVScale));
 
@@ -65,19 +127,19 @@ void ATerrain::CreateVertices()
 void ATerrain::CreateTriangles()
 {
 	int Vertex = 0;
-	for (int X = 0; X < XSize; ++X)
+	for (int X = 0; X < MapXSize; ++X)
 	{
-		for (int Y = 0; Y < YSize; ++Y, ++Vertex)
+		for (int Y = 0; Y < MapYSize; ++Y, ++Vertex)
 		{
 			// First triangle of box
 			Triangles.Add(Vertex);
 			Triangles.Add(Vertex + 1);
-			Triangles.Add(Vertex + YSize + 1);
+			Triangles.Add(Vertex + MapYSize + 1);
 
 			// Second triangle of box
 			Triangles.Add(Vertex + 1);
-			Triangles.Add(Vertex + YSize + 2);
-			Triangles.Add(Vertex + YSize + 1);
+			Triangles.Add(Vertex + MapYSize + 2);
+			Triangles.Add(Vertex + MapYSize + 1);
 		}
 		// We do this to avoid creating a triangle from the final vertices in the previous row with ones in the row above
 		++Vertex;

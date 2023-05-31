@@ -21,25 +21,40 @@ public:
 
 	// Squares along the X axis
 	UPROPERTY(EditAnywhere, Meta = (ClampMin = 0))
-	int XSize = 50;
+	int MapXSize = 50;
+
 	// Squares along the y axis
 	UPROPERTY(EditAnywhere, Meta = (ClampMin = 0))
-	int YSize = 50;
-	UPROPERTY(EditAnywhere, Meta = (ClampMin = 0))
+	int MapYSize = 50;
 
 	// Controls vertices height scaling
-	float ZMultiplier = 100.0f;
+	UPROPERTY(EditAnywhere, Meta = (ClampMin = 0.0f))
+	float ZScale = 600.0f;
 
 	// Perlin noise scaling
-	UPROPERTY(EditAnywhere, Meta = (ClampMin = 0))
-	float NoiseScale = 0.1f;
+	UPROPERTY(EditAnywhere, Meta = (ClampMin = 0.0f))
+	float NoiseScale = 0.25f;
 
-	// Squares along the y axis
+	// Number of noise layers with varying frequency and amplitute (sometimes referred to as an octave)
+	UPROPERTY(EditAnywhere, Meta = (ClampMin = 0))
+	int NoiseLayers = 3;
+
+	// Rate of change in the amplitude
+	UPROPERTY(EditAnywhere, Meta = (ClampMin = 0.0f, ClampMax = 1.0f))
+	float Gain = 0.5f;
+
+	// Rate of change in the frequency
+	UPROPERTY(EditAnywhere, Meta = (ClampMin = 1.0f))
+	float Lacunarity = 0.25f;
+
+	// A scale multiplier applied to vertices
 	UPROPERTY(EditAnywhere, Meta = (ClampMin = 0.00001))
 	float Scale = 100.0f;
+
 	// Squares along the y axis
 	UPROPERTY(EditAnywhere, Meta = (ClampMin = 0.00001))
 	float UVScale = 1.0f;
+
 protected:
 	// Called when an instance of this class is placed (in editor) or spawned.
 	virtual void OnConstruction(const FTransform &Transform) override;
@@ -61,7 +76,9 @@ private:
 	TArray<FVector2D> UV_0;
 	TArray<FVector> Normals;
 	TArray<FProcMeshTangent> Tangents;
+	TArray<TArray<float>> NoiseMap;
 
+	void CreateNoiseMap();
 	void CreateVertices();
 	void CreateTriangles();
 };
