@@ -21,11 +21,11 @@ public:
 
 	// Squares along the X axis
 	UPROPERTY(EditAnywhere, Meta = (ClampMin = 0))
-	int MapXSize = 50;
+	int MapX = 50;
 
 	// Squares along the y axis
 	UPROPERTY(EditAnywhere, Meta = (ClampMin = 0))
-	int MapYSize = 50;
+	int MapY = 50;
 
 	// Controls vertices height scaling
 	UPROPERTY(EditAnywhere, Meta = (ClampMin = 0.0f))
@@ -47,14 +47,17 @@ public:
 	UPROPERTY(EditAnywhere, Meta = (ClampMin = 1.0f))
 	float Lacunarity = 0.25f;
 
-	// A scale multiplier applied to vertices
+	// Vertex scaling
 	UPROPERTY(EditAnywhere, Meta = (ClampMin = 0.00001))
 	float Scale = 100.0f;
 
-	// Squares along the y axis
+	// Texture scaling
 	UPROPERTY(EditAnywhere, Meta = (ClampMin = 0.00001))
 	float UVScale = 1.0f;
 
+	// Seed to control procedural terrain generation
+	UPROPERTY(EditAnywhere)
+	float Seed = 1.0f;
 protected:
 	// Called when an instance of this class is placed (in editor) or spawned.
 	virtual void OnConstruction(const FTransform &Transform) override;

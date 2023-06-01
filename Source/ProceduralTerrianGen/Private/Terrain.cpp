@@ -48,17 +48,32 @@ void ATerrain::Tick(float DeltaTime)
 
 void ATerrain::CreateNoiseMap()
 {
+	// Create a random stream object
+	FRandomStream RandomStream;
+
+	// Initialize the random stream with a seed value
+	RandomStream.Initialize(Seed);
+
+	TArray<FVector2D> LayerOffsets;
+	LayerOffsets.Reserve(NoiseLayers);
+	for (int i = 0; i < NoiseLayers; ++i)
+	{
+		float OffsetX = RandomStream.FRandRange(-100000.0f, 100000.0f);
+		float OffsetY = RandomStream.FRandRange(-100000.0f, 100000.0f);
+		LayerOffsets.Add(FVector2D(OffsetX, OffsetY));
+	}
+
 	float MaxNoiseHeight = TNumericLimits<float>::Min();
 	float MinNoiseHeight = TNumericLimits<float>::Max();
 
 	// If we don't init NoiseMap here
-	NoiseMap.Init(TArray<float>(), MapXSize + 1);
+	NoiseMap.Init(TArray<float>(), MapX + 1);
 
 	// UE_LOG(LogTemp, Warning, TEXT("The !!!noisemap size is %i"), NoiseMap.Num());
 
-	for (int X = 0; X <= MapXSize; ++X)
+	for (int X = 0; X <= MapX; ++X)
 	{
-		for (int Y = 0; Y <= MapYSize; ++Y)
+		for (int Y = 0; Y <= MapY; ++Y)
 		{
 			float Amplitude = 1.0f;
 			float Frequency = 1.0f;
@@ -66,8 +81,8 @@ void ATerrain::CreateNoiseMap()
 
 			for (int i = 0; i < NoiseLayers; ++i)
 			{
-				float SampleX = X * NoiseScale * Frequency;
-				float SampleY = Y * NoiseScale * Frequency;
+				float SampleX = X * NoiseScale * Frequency + LayerOffsets[i].X;
+				float SampleY = Y * NoiseScale * Frequency + LayerOffsets[i].Y;
 
 				float PerlinSample = FMath::PerlinNoise2D(FVector2D(SampleX, SampleY));
 				NoiseZ += PerlinSample * Amplitude;
@@ -89,9 +104,9 @@ void ATerrain::CreateNoiseMap()
 		}
 	}
 
-	for (int X = 0; X <= MapXSize; ++X)
+	for (int X = 0; X <= MapX; ++X)
 	{
-		for (int Y = 0; Y <= MapYSize; ++Y)
+		for (int Y = 0; Y <= MapY; ++Y)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("The !!!noisemap value is %f %i %i"), NoiseMap[X][Y], NoiseMap.Num(), NoiseMap[0].Num());
 			NoiseMap[X][Y] = UKismetMathLibrary::InverseLerp(MinNoiseHeight, MaxNoiseHeight, NoiseMap[X][Y]);
@@ -102,9 +117,9 @@ void ATerrain::CreateNoiseMap()
 void ATerrain::CreateVertices()
 {
 	// For a number of boxes, we need one more vertex hence the <= check
-	for (int X = 0; X <= MapXSize; ++X)
+	for (int X = 0; X <= MapX; ++X)
 	{
-		for (int Y = 0; Y <= MapYSize; ++Y)
+		for (int Y = 0; Y <= MapY; ++Y)
 		{
 			// Perlin noise returns the same value for whole numbers so we add 0.1
 			//float Offset = 0.1f;
@@ -127,19 +142,19 @@ void ATerrain::CreateVertices()
 void ATerrain::CreateTriangles()
 {
 	int Vertex = 0;
-	for (int X = 0; X < MapXSize; ++X)
+	for (int X = 0; X < MapX; ++X)
 	{
-		for (int Y = 0; Y < MapYSize; ++Y, ++Vertex)
+		for (int Y = 0; Y < MapY; ++Y, ++Vertex)
 		{
 			// First triangle of box
 			Triangles.Add(Vertex);
 			Triangles.Add(Vertex + 1);
-			Triangles.Add(Vertex + MapYSize + 1);
+			Triangles.Add(Vertex + MapY + 1);
 
 			// Second triangle of box
 			Triangles.Add(Vertex + 1);
-			Triangles.Add(Vertex + MapYSize + 2);
-			Triangles.Add(Vertex + MapYSize + 1);
+			Triangles.Add(Vertex + MapY + 2);
+			Triangles.Add(Vertex + MapY + 1);
 		}
 		// We do this to avoid creating a triangle from the final vertices in the previous row with ones in the row above
 		++Vertex;
