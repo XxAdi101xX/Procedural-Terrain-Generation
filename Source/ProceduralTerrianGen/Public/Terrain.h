@@ -10,6 +10,14 @@
 class UProceduralMeshComponent;
 class UMaterialInterface;
 
+struct TerrainType {
+	FString Name;
+	float Height;
+	FColor Color;
+
+	TerrainType(FString Name, float Height, FColor Color);
+};
+
 UCLASS()
 class PROCEDURALTERRIANGEN_API ATerrain : public AActor
 {
@@ -77,11 +85,14 @@ private:
 	TArray<FVector> Vertices;
 	TArray<int> Triangles;
 	TArray<FVector2D> UV_0;
+	TArray<FColor> VertexColors;
 	TArray<FVector> Normals;
 	TArray<FProcMeshTangent> Tangents;
 	TArray<TArray<float>> NoiseMap;
+	TArray<TerrainType *> TerrainTypes;
 
 	void CreateNoiseMap();
 	void CreateVertices();
 	void CreateTriangles();
+	void CreateVertexColors();
 };

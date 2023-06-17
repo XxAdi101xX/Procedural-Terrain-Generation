@@ -19,18 +19,28 @@ void ATerrain::OnConstruction(const FTransform &Transform)
 {
 	Super::OnConstruction(Transform);
 
+	// Important note: Terrain types should be added from lowest to highest heights
+	TerrainTypes.Add(new TerrainType("Water", 120.0f, FColor(15.0f, 94.0f, 156.0f, 1.0f)));
+	TerrainTypes.Add(new TerrainType("Grass", 300.0f, FColor(0.0f, 76.0f, 0.0f, 1.0f)));
+	TerrainTypes.Add(new TerrainType("Snow", TNumericLimits<float>::Max(), FColor(255.0f, 255.0f, 255.0f, 1.0f))); // Default
+
 	Vertices.Reset();
 	Triangles.Reset();
 	UV_0.Reset();
+	VertexColors.Reset();
 
 	CreateNoiseMap();
 	CreateVertices();
 	CreateTriangles();
+	CreateVertexColors();
 
 	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(Vertices, Triangles, UV_0, Normals, Tangents);
 
-	ProceduralMesh->CreateMeshSection(0, Vertices, Triangles, Normals, UV_0, TArray<FColor>(), Tangents, true);
+	ProceduralMesh->CreateMeshSection(0, Vertices, Triangles, Normals, UV_0, VertexColors, Tangents, true);
+	//Material = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/StarterContent/Materials/M_Basic_Floor.M_Basic_Floor"));
+	//Material = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/CustomBaseMaterial.CustomBaseMaterial"));
 	ProceduralMesh->SetMaterial(0, Material);
+	UE_LOG(LogTemp, Warning, TEXT("vertex and color size is %d %d"), Vertices.Num(), VertexColors.Num());
 }
 
 // Called when the game starts or when spawned
@@ -69,7 +79,7 @@ void ATerrain::CreateNoiseMap()
 	// If we don't init NoiseMap here
 	NoiseMap.Init(TArray<float>(), MapX + 1);
 
-	// UE_LOG(LogTemp, Warning, TEXT("The !!!noisemap size is %i"), NoiseMap.Num());
+	//UE_LOG(LogTemp, Warning, TEXT("The !!!noisemap size is %i"), NoiseMap.Num());
 
 	for (int X = 0; X <= MapX; ++X)
 	{
@@ -108,7 +118,7 @@ void ATerrain::CreateNoiseMap()
 	{
 		for (int Y = 0; Y <= MapY; ++Y)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("The !!!noisemap value is %f %i %i"), NoiseMap[X][Y], NoiseMap.Num(), NoiseMap[0].Num());
+			//UE_LOG(LogTemp, Warning, TEXT("The !!!noisemap value is %f %i %i"), NoiseMap[X][Y], NoiseMap.Num(), NoiseMap[0].Num());
 			NoiseMap[X][Y] = UKismetMathLibrary::InverseLerp(MinNoiseHeight, MaxNoiseHeight, NoiseMap[X][Y]);
 		}
 	}
@@ -128,13 +138,8 @@ void ATerrain::CreateVertices()
 			//float Z = FMath::PerlinNoise2D(FVector2D(SampleX, SampleY)) * ZScale;
 			float Z = NoiseMap[X][Y] * ZScale;
 
-			//UE_LOG(LogTemp, Warning, TEXT("The Z is %f"), Z);
-
 			Vertices.Add(FVector(X * Scale, Y * Scale, Z));
 			UV_0.Add(FVector2D(X * UVScale, Y * UVScale));
-
-			// Debugging
-			//DrawDebugSphere(GetWorld(), FVector(X * Scale, Y * Scale, 0 * Scale), 25.0f, 16, FColor::Red, true, -1.0f, 0U, 0.0f);
 		}
 	}
 }
@@ -159,5 +164,30 @@ void ATerrain::CreateTriangles()
 		// We do this to avoid creating a triangle from the final vertices in the previous row with ones in the row above
 		++Vertex;
 	}
+}
+
+void ATerrain::CreateVertexColors()
+{
+	FlushPersistentDebugLines(GetWorld()); // TODO remove this
+	for (int VertexIndex = 0; VertexIndex < Vertices.Num(); ++VertexIndex)
+	{
+		float Z = Vertices[VertexIndex].Z;
+		for (int TerrainIndex = 0; TerrainIndex < TerrainTypes.Num(); ++TerrainIndex)
+		{
+			if (Z < TerrainTypes[TerrainIndex]->Height)
+			{
+				VertexColors.Add(TerrainTypes[TerrainIndex]->Color);
+				// Debugging
+				//DrawDebugSphere(GetWorld(), FVector(Vertices[VertexIndex].X, Vertices[VertexIndex].Y, 0), 25.0f, 16, TerrainTypes[TerrainIndex]->Color, true, -1.0f, 0U, 0.0f);
+				break;
+			}
+		}
+	}
+	UE_LOG(LogTemp, Warning, TEXT("Vertex color size %d"), VertexColors.Num());
+}
+
+
+TerrainType::TerrainType(FString Name, float Height, FColor Color): Name{Name}, Height{Height}, Color{Color}
+{
 }
 
