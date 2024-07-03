@@ -119,7 +119,7 @@ void ATerrain::CreateNoiseMap()
 		for (int Y = 0; Y <= MapY; ++Y)
 		{
 			//UE_LOG(LogTemp, Warning, TEXT("The !!!noisemap value is %f %i %i"), NoiseMap[X][Y], NoiseMap.Num(), NoiseMap[0].Num());
-			NoiseMap[X][Y] = UKismetMathLibrary::InverseLerp(MinNoiseHeight, MaxNoiseHeight, NoiseMap[X][Y]);
+			NoiseMap[X][Y] = UKismetMathLibrary::NormalizeToRange(NoiseMap[X][Y], MinNoiseHeight, MaxNoiseHeight);
 		}
 	}
 }
