@@ -18,7 +18,26 @@ ATerrain::ATerrain()
 void ATerrain::OnConstruction(const FTransform &Transform)
 {
 	Super::OnConstruction(Transform);
+	CreateTerrain(); // Added so we can see the terrain updated before pressing the play button
+}
 
+// Called when the game starts or when spawned
+void ATerrain::BeginPlay()
+{
+	Super::BeginPlay();
+	CreateTerrain();
+	// GEngine->AddOnScreenDebugMessage(-1, 999.0f, FColor::Yellow, FString::Printf(TEXT("Z %f"), 3.0));
+
+}
+
+// Called every frame
+void ATerrain::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+}
+
+void ATerrain::CreateTerrain()
+{
 	// Important note: Terrain types should be added from lowest to highest heights
 	TerrainTypes.Add(new TerrainType("Water", 120.0f, FColor(15.0f, 94.0f, 156.0f, 1.0f)));
 	TerrainTypes.Add(new TerrainType("Grass", 300.0f, FColor(0.0f, 76.0f, 0.0f, 1.0f)));
@@ -41,19 +60,6 @@ void ATerrain::OnConstruction(const FTransform &Transform)
 	//Material = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/CustomBaseMaterial.CustomBaseMaterial"));
 	ProceduralMesh->SetMaterial(0, Material);
 	UE_LOG(LogTemp, Warning, TEXT("vertex and color size is %d %d"), Vertices.Num(), VertexColors.Num());
-}
-
-// Called when the game starts or when spawned
-void ATerrain::BeginPlay()
-{
-	Super::BeginPlay();
-	// GEngine->AddOnScreenDebugMessage(-1, 999.0f, FColor::Yellow, FString::Printf(TEXT("Z %f"), 3.0));
-}
-
-// Called every frame
-void ATerrain::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 }
 
 void ATerrain::CreateNoiseMap()
@@ -122,6 +128,8 @@ void ATerrain::CreateNoiseMap()
 			NoiseMap[X][Y] = UKismetMathLibrary::NormalizeToRange(NoiseMap[X][Y], MinNoiseHeight, MaxNoiseHeight);
 		}
 	}
+
+	UE_LOG(LogTemp, Warning, TEXT("noise map created of size %i, %i"), NoiseMap.Num(), NoiseMap[0].Num());
 }
 
 void ATerrain::CreateVertices()
@@ -189,5 +197,10 @@ void ATerrain::CreateVertexColors()
 
 TerrainType::TerrainType(FString Name, float Height, FColor Color): Name{Name}, Height{Height}, Color{Color}
 {
+}
+
+TArray<TArray<float>> ATerrain::GetNoiseMap()
+{
+	return NoiseMap;
 }
 

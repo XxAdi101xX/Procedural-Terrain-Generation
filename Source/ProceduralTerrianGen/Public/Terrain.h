@@ -80,6 +80,7 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	TArray<TArray<float>> GetNoiseMap();
 private:
 	UProceduralMeshComponent *ProceduralMesh;
 	TArray<FVector> Vertices;
@@ -91,6 +92,7 @@ private:
 	TArray<TArray<float>> NoiseMap;
 	TArray<TerrainType *> TerrainTypes;
 
+	void CreateTerrain();
 	void CreateNoiseMap();
 	void CreateVertices();
 	void CreateTriangles();
